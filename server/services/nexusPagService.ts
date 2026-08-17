@@ -12,26 +12,6 @@ export interface CreatePixOptions {
   expirationSeconds?: number;
 }
 
-export interface NexusPagPixResponse {
-  success?: boolean;
-  status?: string;
-  message?: string;
-  error?: string;
-  transaction?: {
-    id: string;
-    txid: string;
-    external_id: string;
-    amount: number;
-    fee?: number;
-    fee_percent?: number;
-    net_amount?: number;
-    status: string;
-    pix_copia_cola: string;
-    qr_code_base64: string;
-    expires_at: string;
-  };
-}
-
 function getApiKey(): string {
   return (process.env.NEXUSPAG_API_KEY || '').trim();
 }
@@ -164,44 +144,63 @@ export const nexusPagService = {
   },
 
   async checkPaymentStatus(paymentId: string): Promise<PaymentTransaction | null> {
-    const payment = db.findPaymentById(paymentId);
-    if (!payment) return null;
+    let payment = db.findPaymentById(paymentId);
 
-    if (payment.status === 'paid' || payment.status === 'completed') return payment;
-
-    if (new Date() > new Date(payment.expiresAt)) {
-      db.updatePayment(payment.id, { status: 'expired' });
-      return { ...payment, status: 'expired' };
+    if (payment && (payment.status === 'paid' || payment.status === 'completed')) {
+      return payment;
     }
 
     const apiKey = getApiKey();
     const baseUrl = getBaseUrl();
 
+    // Query NexusPag live API directly so serverless cold starts never miss status
     if (this.isConfigured()) {
       try {
-        const queryId = payment.id || payment.txid || payment.externalId;
+        const queryId = payment?.id || payment?.txid || payment?.externalId || paymentId;
         const response = await fetch(`${baseUrl}/api/pix/${encodeURIComponent(queryId)}`, {
           headers: {
             'x-api-key': apiKey,
+            'Content-Type': 'application/json',
           },
         });
+
         if (response.ok) {
           const data = (await response.json()) as any;
-          const status = (data?.status || data?.transaction?.status || '').toLowerCase();
+          const tx = data?.transaction || data;
+          const status = (tx?.status || data?.status || '').toLowerCase();
+
           if (status === 'paid' || status === 'completed') {
-            const updated = db.updatePayment(payment.id, {
-              status: 'completed',
-              paidAt: data?.paid_at || new Date().toISOString(),
-            });
-            return updated || payment;
+            if (payment) {
+              payment = db.updatePayment(payment.id, {
+                status: 'completed',
+                paidAt: tx?.paid_at || data?.paid_at || new Date().toISOString(),
+              });
+            } else {
+              payment = db.createPayment({
+                id: tx?.id || paymentId,
+                gateway: 'nexuspag',
+                product: 'live_access',
+                externalId: tx?.external_id || paymentId,
+                txid: tx?.txid || paymentId,
+                amount: typeof tx?.amount === 'number' ? tx.amount : 9.90,
+                currency: 'BRL',
+                status: 'completed',
+                pixCopiaCola: tx?.pix_copia_cola || '',
+                qrCodeBase64: tx?.qr_code_base64 || '',
+                createdAt: new Date().toISOString(),
+                paidAt: tx?.paid_at || new Date().toISOString(),
+                expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
+              });
+            }
+            return payment || null;
           }
         }
       } catch (err) {
-        console.error('Error querying NexusPag status:', err);
+        console.error('[Error querying NexusPag status]:', err);
       }
     }
 
-    return payment;
+    return payment || null;
   },
 
   simulatePaymentApproval(paymentId: string): PaymentTransaction | null {

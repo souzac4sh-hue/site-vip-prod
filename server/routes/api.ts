@@ -290,35 +290,38 @@ apiRouter.post('/webhooks/nexuspag', async (req: Request, res: Response) => {
     }
 
     const payload = req.body;
-    const transactionId = payload.transaction_id || payload.id || payload.txid || payload.external_id;
-    const status = (payload.status || payload.event || '').toLowerCase();
-    const receivedAmount = payload.amount !== undefined ? Number(payload.amount) : undefined;
+    const tx = payload?.transaction || payload;
+    const transactionId = tx?.id || tx?.txid || tx?.external_id || payload?.id || payload?.external_id;
+    const status = (tx?.status || payload?.status || payload?.event || '').toLowerCase();
 
-    if (!transactionId || typeof transactionId !== 'string') {
+    if (!transactionId) {
       return res.status(400).json({ error: 'Missing transaction identifier' });
     }
 
-    const payment = db.findPaymentById(transactionId);
-    if (!payment) {
-      return res.status(200).json({ received: true, status: 'ignored' });
-    }
-
-    // 2. Validate expected amount to prevent partial/manipulated payments
-    if (receivedAmount !== undefined && Math.abs(receivedAmount - payment.amount) > 0.01) {
-      console.warn(`[Webhook NexusPag] Amount mismatch: expected ${payment.amount}, received ${receivedAmount}`);
-      return res.status(400).json({ error: 'Amount mismatch' });
-    }
-
-    // 3. Idempotency check
-    if (payment.status === 'completed' || payment.status === 'paid') {
-      return res.status(200).json({ received: true, status: 'already_processed' });
-    }
+    let payment = db.findPaymentById(transactionId);
 
     if (status === 'paid' || status === 'approved' || status === 'completed' || status === 'pix.paid') {
-      db.updatePayment(payment.id, {
-        status: 'completed',
-        paidAt: new Date().toISOString(),
-      });
+      if (payment) {
+        db.updatePayment(payment.id, {
+          status: 'completed',
+          paidAt: new Date().toISOString(),
+        });
+      } else {
+        payment = db.createPayment({
+          id: String(transactionId),
+          gateway: 'nexuspag',
+          product: 'live_access',
+          externalId: String(transactionId),
+          amount: typeof tx?.amount === 'number' ? tx.amount : 9.90,
+          currency: 'BRL',
+          status: 'completed',
+          pixCopiaCola: '',
+          qrCodeBase64: '',
+          createdAt: new Date().toISOString(),
+          paidAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
+        });
+      }
 
       const config = db.getConfig();
       createAccessSessionForPayment(
