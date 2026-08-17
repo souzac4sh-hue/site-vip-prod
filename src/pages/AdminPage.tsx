@@ -1149,6 +1149,85 @@ export const AdminPage: React.FC = () => {
               </div>
             )}
 
+            {/* Configurações de Exibição e Tempo do Mural */}
+            <div className="p-6 rounded-2xl glass-card border border-white/[0.08] space-y-5">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-mono uppercase tracking-wider text-brand-400 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-brand-500" />
+                  <span>Configuração de Tempo & Transmissão dos Avisos</span>
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-zinc-900/80 border border-white/5 space-y-2">
+                  <label className="block text-xs font-bold text-white">
+                    Intervalo Entre Cada Aviso (Segundos)
+                  </label>
+                  <p className="text-[11px] text-zinc-400">
+                    Tempo que o visitante espera para ver o próximo aviso subir na tela.
+                  </p>
+                  <div className="flex items-center gap-3 pt-1">
+                    <input
+                      type="number"
+                      min={3}
+                      max={120}
+                      value={config?.announcementConfig?.intervalSeconds ?? 8}
+                      onChange={(e) => {
+                        if (!config) return;
+                        setConfig({
+                          ...config,
+                          announcementConfig: {
+                            ...config.announcementConfig,
+                            intervalSeconds: Math.max(3, Number(e.target.value) || 8),
+                          },
+                        });
+                      }}
+                      className="w-24 bg-[#08080c] border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-mono font-bold focus:outline-none focus:border-brand-500"
+                    />
+                    <span className="text-xs text-zinc-400 font-mono">segundos (padrão: 8s)</span>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-zinc-900/80 border border-white/5 space-y-2">
+                  <label className="block text-xs font-bold text-white">
+                    Repetição Contínua (Loop)
+                  </label>
+                  <p className="text-[11px] text-zinc-400">
+                    Ao chegar no último comunicado, recomeça do início como stream contínuo.
+                  </p>
+                  <label className="flex items-center gap-3 pt-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={config?.announcementConfig?.loop ?? true}
+                      onChange={(e) => {
+                        if (!config) return;
+                        setConfig({
+                          ...config,
+                          announcementConfig: {
+                            ...config.announcementConfig,
+                            loop: e.target.checked,
+                          },
+                        });
+                      }}
+                      className="w-4 h-4 rounded bg-zinc-900 border-white/20 text-brand-500 focus:ring-brand-500"
+                    />
+                    <span className="text-xs text-zinc-200 font-semibold">Repetir mensagens em Loop infinito</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleSaveConfig}
+                  className="py-2.5 px-5 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-1.5"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Salvar Configurações do Mural</span>
+                </button>
+              </div>
+            </div>
+
             {/* Lista de Comunicados Ativos */}
             <div className="p-6 rounded-2xl glass-card border border-white/[0.08] space-y-4">
               <h3 className="text-sm font-mono uppercase tracking-wider text-brand-400 flex items-center gap-2">
@@ -1156,7 +1235,7 @@ export const AdminPage: React.FC = () => {
                 <span>Comunicados Oficiais no Mural ({announcements.length})</span>
               </h3>
               <p className="text-xs text-zinc-400">
-                Essas mensagens aparecem na caixa <strong>"Chat ao Vivo • Mural de Comunicados"</strong> fixada logo abaixo do player de vídeo na página inicial.
+                Essas mensagens aparecem na caixa <strong>"Mural de Comunicados"</strong> fixada logo abaixo do player de vídeo na página inicial.
               </p>
 
               <div className="space-y-2.5">
