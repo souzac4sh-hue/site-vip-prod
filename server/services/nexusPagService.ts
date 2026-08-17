@@ -2,11 +2,6 @@ import crypto from 'crypto';
 import { db } from './db.js';
 import { PaymentTransaction, ProductType } from '../../src/types/index.js';
 
-const NEXUSPAG_BASE_URL = process.env.NEXUSPAG_BASE_URL || 'https://nexuspag.com';
-const NEXUSPAG_API_KEY = process.env.NEXUSPAG_API_KEY || '';
-const NEXUSPAG_WEBHOOK_URL = process.env.NEXUSPAG_WEBHOOK_URL || '';
-const NEXUSPAG_WEBHOOK_SECRET = process.env.NEXUSPAG_WEBHOOK_SECRET || '';
-
 export interface CreatePixOptions {
   amount?: number;
   product?: ProductType;
@@ -18,8 +13,11 @@ export interface CreatePixOptions {
 }
 
 export interface NexusPagPixResponse {
-  success: boolean;
-  transaction: {
+  success?: boolean;
+  status?: string;
+  message?: string;
+  error?: string;
+  transaction?: {
     id: string;
     txid: string;
     external_id: string;
@@ -31,11 +29,24 @@ export interface NexusPagPixResponse {
     qr_code_base64: string;
     expires_at: string;
   };
+  pix_copia_cola?: string;
+  qr_code_base64?: string;
+  id?: string;
+  txid?: string;
+}
+
+function getApiKey(): string {
+  return (process.env.NEXUSPAG_API_KEY || '').trim();
+}
+
+function getBaseUrl(): string {
+  return (process.env.NEXUSPAG_BASE_URL || 'https://nexuspag.com').trim();
 }
 
 export const nexusPagService = {
   isConfigured(): boolean {
-    return Boolean(NEXUSPAG_API_KEY && !NEXUSPAG_API_KEY.includes('demo_test_key') && !NEXUSPAG_API_KEY.includes('sample'));
+    const key = getApiKey();
+    return Boolean(key && !key.includes('demo_test_key') && !key.includes('sample') && key.length > 5);
   },
 
   async createPixCharge(options: CreatePixOptions): Promise<PaymentTransaction> {
@@ -45,8 +56,8 @@ export const nexusPagService = {
       options.amount !== undefined
         ? options.amount
         : product === 'whatsapp_access'
-        ? config.whatsappPrice
-        : config.price;
+        ? config.whatsappPrice || 9.90
+        : config.price || 9.90;
 
     const externalId = options.externalId || `ord_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
     const expirationSeconds = options.expirationSeconds || 1800; // 30 mins
@@ -64,66 +75,82 @@ export const nexusPagService = {
     }
 
     const isProd = process.env.NODE_ENV === 'production';
+    const apiKey = getApiKey();
+    const baseUrl = getBaseUrl();
 
     // 1. Live Gateway Execution
     if (this.isConfigured()) {
       try {
-        const response = await fetch(`${NEXUSPAG_BASE_URL}/api/pix/create`, {
+        const payload = {
+          amount: Number(amount.toFixed(2)),
+          description,
+          external_id: externalId,
+          webhook_url:
+            process.env.NEXUSPAG_WEBHOOK_URL ||
+            `${process.env.PUBLIC_SITE_URL || ''}/api/webhooks/nexuspag`,
+          expiration: expirationSeconds,
+        };
+
+        const response = await fetch(`${baseUrl}/api/pix/create`, {
           method: 'POST',
           headers: {
-            'x-api-key': NEXUSPAG_API_KEY,
+            'x-api-key': apiKey,
+            'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
           },
-          body: JSON.stringify({
-            amount: Number(amount.toFixed(2)),
-            description,
-            external_id: externalId,
-            webhook_url:
-              NEXUSPAG_WEBHOOK_URL ||
-              `${process.env.PUBLIC_SITE_URL || 'http://localhost:3001'}/api/webhooks/nexuspag`,
-            expiration: expirationSeconds,
-          }),
+          body: JSON.stringify(payload),
         });
 
-        const data = (await response.json()) as NexusPagPixResponse;
+        let data: any;
+        try {
+          data = await response.json();
+        } catch {
+          data = {};
+        }
 
-        if (response.ok && data.success && data.transaction) {
+        const tx = data?.transaction || data;
+        const pixCopiaCola = tx?.pix_copia_cola || data?.pix_copia_cola || data?.emv || data?.payload;
+        const qrCodeBase64 = tx?.qr_code_base64 || data?.qr_code_base64 || data?.qrcode;
+        const txId = tx?.id || tx?.txid || data?.id || data?.txid || externalId;
+
+        if (response.ok && (pixCopiaCola || tx?.id)) {
           const payment: PaymentTransaction = {
-            id: data.transaction.id,
+            id: String(txId),
             gateway: 'nexuspag',
             product,
-            externalId: data.transaction.external_id || externalId,
-            txid: data.transaction.txid,
-            amount: data.transaction.amount,
+            externalId: tx?.external_id || externalId,
+            txid: tx?.txid || String(txId),
+            amount: typeof tx?.amount === 'number' ? tx.amount : amount,
             currency: 'BRL',
             status: 'pending',
             customerName: options.customerName,
             customerEmail: options.customerEmail,
-            pixCopiaCola: data.transaction.pix_copia_cola,
-            qrCodeBase64: data.transaction.qr_code_base64,
+            pixCopiaCola: pixCopiaCola || '',
+            qrCodeBase64: qrCodeBase64 || '',
             createdAt: new Date().toISOString(),
-            expiresAt: data.transaction.expires_at || new Date(Date.now() + expirationSeconds * 1000).toISOString(),
+            expiresAt: tx?.expires_at || new Date(Date.now() + expirationSeconds * 1000).toISOString(),
           };
           return db.createPayment(payment);
         } else {
-          console.error('[NexusPag API Error]:', data);
-          if (isProd) {
-            throw new Error('Falha ao comunicar com gateway de pagamento.');
-          }
+          console.error('[NexusPag API Response Failure]:', data);
+          const errorMsg = data?.message || data?.error || 'Chave de API NexusPag inválida ou recusada pelo gateway.';
+          throw new Error(errorMsg);
         }
       } catch (error: any) {
-        console.error('[NexusPag Exception]:', error);
-        if (isProd) {
-          throw new Error('Gateway de pagamento indisponível no momento. Tente novamente em alguns instantes.');
-        }
+        console.error('[NexusPag Request Error]:', error?.message || error);
+        throw new Error(error?.message || 'Falha ao conectar com o gateway NexusPag.');
       }
-    } else if (isProd) {
-      // In production, FAIL CLOSED if gateway is not configured
-      console.error('[CRITICAL] NexusPag API key is not configured in production environment.');
-      throw new Error('Gateway de pagamento não configurado no ambiente de produção.');
+    } else {
+      // If API key is missing
+      if (isProd) {
+        throw new Error(
+          'A variável NEXUSPAG_API_KEY não foi configurada no painel da Vercel. Adicione a chave da NexusPag em Settings -> Environment Variables.'
+        );
+      }
     }
 
-    // 2. Development Sandbox / Simulation Mode (STRICTLY DISABLED IN PRODUCTION)
+    // 2. Development Sandbox / Simulation Mode (STRICTLY FOR LOCAL DEV)
     const mockTxId = `nxp_${crypto.randomBytes(12).toString('hex')}`;
     const expiresAt = new Date(Date.now() + expirationSeconds * 1000).toISOString();
     const mockPixCopiaCola = `00020126580014br.gov.bcb.pix0136${crypto.randomUUID()}5204000053039865405${amount.toFixed(2)}5802BR5920${config.creator.name.replace(/[^a-zA-Z ]/g, '').slice(0, 20)}6009SAO PAULO62070503***6304${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
@@ -159,10 +186,16 @@ export const nexusPagService = {
       return { ...payment, status: 'expired' };
     }
 
+    const apiKey = getApiKey();
+    const baseUrl = getBaseUrl();
+
     if (this.isConfigured() && payment.txid) {
       try {
-        const response = await fetch(`${NEXUSPAG_BASE_URL}/api/pix/get?id=${payment.id}&txid=${payment.txid}`, {
-          headers: { 'x-api-key': NEXUSPAG_API_KEY },
+        const response = await fetch(`${baseUrl}/api/pix/get?id=${payment.id}&txid=${payment.txid}`, {
+          headers: {
+            'x-api-key': apiKey,
+            'Authorization': `Bearer ${apiKey}`,
+          },
         });
         if (response.ok) {
           const data = await response.json();
@@ -199,10 +232,10 @@ export const nexusPagService = {
   },
 
   /**
-   * Validates HMAC Signature of incoming NexusPag Webhook
+   * Validates HMAC Signature of incoming NexusPag Webhook (Optional if gateway delivers directly)
    */
   verifyWebhookSignature(rawBody: string | Buffer, signatureHeader?: string): boolean {
-    const secret = process.env.NEXUSPAG_WEBHOOK_SECRET || NEXUSPAG_WEBHOOK_SECRET;
+    const secret = process.env.NEXUSPAG_WEBHOOK_SECRET || '';
 
     // If no webhook secret is configured in the gateway, allow direct endpoint delivery
     if (!secret) {
