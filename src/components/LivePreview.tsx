@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Lock, VolumeX, Volume2, Play, Users } from 'lucide-react';
 import { CreatorProfile, StreamStatus } from '../types';
 import { StatusBadge } from './StatusBadge';
@@ -14,11 +14,33 @@ interface LivePreviewProps {
 export const LivePreview: React.FC<LivePreviewProps> = ({
   creator,
   status,
-  onlineViewers = 1480,
+  onlineViewers = 38,
   onUnlockClick,
 }) => {
   const [isMuted, setIsMuted] = useState<boolean>(true);
+  const [viewers, setViewers] = useState<number>(() => onlineViewers || 38);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    setViewers(onlineViewers || 38);
+  }, [onlineViewers]);
+
+  // Natural live fluctuation between 30 and 100 viewers
+  useEffect(() => {
+    if (status !== 'live') return;
+
+    const interval = setInterval(() => {
+      setViewers((prev) => {
+        const delta = Math.floor(Math.random() * 5) - 2; // -2, -1, 0, +1, +2
+        const next = prev + delta;
+        if (next < 30) return 30 + Math.floor(Math.random() * 6);
+        if (next > 100) return 100 - Math.floor(Math.random() * 6);
+        return next;
+      });
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [status]);
 
   const isVideo = creator.previewMediaType === 'video' && Boolean(creator.previewVideoUrl);
 
@@ -87,7 +109,7 @@ export const LivePreview: React.FC<LivePreviewProps> = ({
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/60 backdrop-blur-sm text-white text-[11px] font-semibold">
               <Users className="w-3 h-3 text-rose-400" />
               <span className="font-tabular">
-                {(onlineViewers || 1480).toLocaleString('pt-BR')} online
+                {viewers.toLocaleString('pt-BR')} online
               </span>
             </div>
           )}

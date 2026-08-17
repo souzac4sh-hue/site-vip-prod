@@ -148,7 +148,7 @@ export const HomePage: React.FC = () => {
               creator={config.creator}
               status={config.status}
               scheduledAt={config.scheduledAt}
-              onlineViewers={config.onlineViewersCount || 1480}
+              onlineViewers={config.onlineViewersCount || 38}
               onUnlockClick={handleOpenCheckout}
             />
 

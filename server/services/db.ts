@@ -77,7 +77,7 @@ const defaultLiveConfig: LiveConfig = {
   demoMode: false,
   chatEnabled: false,
   autoWelcomeEnabled: false,
-  onlineViewersCount: 1480,
+  onlineViewersCount: 38,
   whatsappLink: 'https://wa.me/5511999999999?text=Oie%20Sara,%20acabei%20de%20liberar%20meu%20acesso%20de%2030%20dias%20no%20site!',
   previewsGroupLink: '',
   creator: {
