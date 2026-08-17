@@ -23,16 +23,13 @@ export interface NexusPagPixResponse {
     external_id: string;
     amount: number;
     fee?: number;
+    fee_percent?: number;
     net_amount?: number;
     status: string;
     pix_copia_cola: string;
     qr_code_base64: string;
     expires_at: string;
   };
-  pix_copia_cola?: string;
-  qr_code_base64?: string;
-  id?: string;
-  txid?: string;
 }
 
 function getApiKey(): string {
@@ -66,7 +63,7 @@ export const nexusPagService = {
       options.description ||
       (product === 'whatsapp_access'
         ? `WhatsApp VIP - ${config.creator.name}`
-        : `Acesso Sala Privada - ${config.creator.name}`);
+        : `Acesso VIP 30 Dias - ${config.creator.name}`);
 
     // Check idempotency
     const existing = db.findPaymentById(externalId);
@@ -78,71 +75,62 @@ export const nexusPagService = {
     const apiKey = getApiKey();
     const baseUrl = getBaseUrl();
 
-    // 1. Live Gateway Execution
+    // 1. Live NexusPag Gateway Execution
     if (this.isConfigured()) {
       try {
-        const payload = {
+        const payload: Record<string, any> = {
           amount: Number(amount.toFixed(2)),
           description,
           external_id: externalId,
-          webhook_url:
-            process.env.NEXUSPAG_WEBHOOK_URL ||
-            `${process.env.PUBLIC_SITE_URL || ''}/api/webhooks/nexuspag`,
           expiration: expirationSeconds,
         };
+
+        if (process.env.PUBLIC_SITE_URL || process.env.NEXUSPAG_WEBHOOK_URL) {
+          payload.webhook_url =
+            process.env.NEXUSPAG_WEBHOOK_URL ||
+            `${process.env.PUBLIC_SITE_URL}/api/webhooks/nexuspag`;
+        }
 
         const response = await fetch(`${baseUrl}/api/pix/create`, {
           method: 'POST',
           headers: {
             'x-api-key': apiKey,
-            'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
-            'Accept': 'application/json',
           },
           body: JSON.stringify(payload),
         });
 
-        let data: any;
-        try {
-          data = await response.json();
-        } catch {
-          data = {};
-        }
+        const data = (await response.json()) as any;
 
-        const tx = data?.transaction || data;
-        const pixCopiaCola = tx?.pix_copia_cola || data?.pix_copia_cola || data?.emv || data?.payload;
-        const qrCodeBase64 = tx?.qr_code_base64 || data?.qr_code_base64 || data?.qrcode;
-        const txId = tx?.id || tx?.txid || data?.id || data?.txid || externalId;
-
-        if (response.ok && (pixCopiaCola || tx?.id)) {
+        if (response.ok && data?.success && data?.transaction) {
+          const tx = data.transaction;
           const payment: PaymentTransaction = {
-            id: String(txId),
+            id: String(tx.id || externalId),
             gateway: 'nexuspag',
             product,
-            externalId: tx?.external_id || externalId,
-            txid: tx?.txid || String(txId),
-            amount: typeof tx?.amount === 'number' ? tx.amount : amount,
+            externalId: tx.external_id || externalId,
+            txid: tx.txid || String(tx.id),
+            amount: typeof tx.amount === 'number' ? tx.amount : amount,
             currency: 'BRL',
             status: 'pending',
             customerName: options.customerName,
             customerEmail: options.customerEmail,
-            pixCopiaCola: pixCopiaCola || '',
-            qrCodeBase64: qrCodeBase64 || '',
+            pixCopiaCola: tx.pix_copia_cola || '',
+            qrCodeBase64: tx.qr_code_base64 || '',
             createdAt: new Date().toISOString(),
-            expiresAt: tx?.expires_at || new Date(Date.now() + expirationSeconds * 1000).toISOString(),
+            expiresAt: tx.expires_at || new Date(Date.now() + expirationSeconds * 1000).toISOString(),
           };
           return db.createPayment(payment);
         } else {
-          console.error('[NexusPag API Response Failure]:', data);
-          const errorMsg = data?.message || data?.error || 'Chave de API NexusPag inválida ou recusada pelo gateway.';
+          console.error('[NexusPag API Error]:', data);
+          const errorMsg = data?.message || data?.error || (response.status === 401 ? 'API Key da NexusPag inválida ou não autorizada.' : 'Erro ao gerar PIX na NexusPag.');
           throw new Error(errorMsg);
         }
       } catch (error: any) {
-        console.error('[NexusPag Request Error]:', error?.message || error);
+        console.error('[NexusPag Exception]:', error?.message || error);
         throw new Error(error?.message || 'Falha ao conectar com o gateway NexusPag.');
       }
     } else {
-      // If API key is missing
       if (isProd) {
         throw new Error(
           'A variável NEXUSPAG_API_KEY não foi configurada no painel da Vercel. Adicione a chave da NexusPag em Settings -> Environment Variables.'
@@ -150,7 +138,7 @@ export const nexusPagService = {
       }
     }
 
-    // 2. Development Sandbox / Simulation Mode (STRICTLY FOR LOCAL DEV)
+    // 2. Development Sandbox (Only for local development when no API key is provided)
     const mockTxId = `nxp_${crypto.randomBytes(12).toString('hex')}`;
     const expiresAt = new Date(Date.now() + expirationSeconds * 1000).toISOString();
     const mockPixCopiaCola = `00020126580014br.gov.bcb.pix0136${crypto.randomUUID()}5204000053039865405${amount.toFixed(2)}5802BR5920${config.creator.name.replace(/[^a-zA-Z ]/g, '').slice(0, 20)}6009SAO PAULO62070503***6304${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
@@ -189,20 +177,21 @@ export const nexusPagService = {
     const apiKey = getApiKey();
     const baseUrl = getBaseUrl();
 
-    if (this.isConfigured() && payment.txid) {
+    if (this.isConfigured()) {
       try {
-        const response = await fetch(`${baseUrl}/api/pix/get?id=${payment.id}&txid=${payment.txid}`, {
+        const queryId = payment.id || payment.txid || payment.externalId;
+        const response = await fetch(`${baseUrl}/api/pix/${encodeURIComponent(queryId)}`, {
           headers: {
             'x-api-key': apiKey,
-            'Authorization': `Bearer ${apiKey}`,
           },
         });
         if (response.ok) {
-          const data = await response.json();
-          if (data && (data.status === 'paid' || data.status === 'approved' || data.transaction?.status === 'paid')) {
+          const data = (await response.json()) as any;
+          const status = (data?.status || data?.transaction?.status || '').toLowerCase();
+          if (status === 'paid' || status === 'completed') {
             const updated = db.updatePayment(payment.id, {
               status: 'completed',
-              paidAt: new Date().toISOString(),
+              paidAt: data?.paid_at || new Date().toISOString(),
             });
             return updated || payment;
           }
@@ -216,7 +205,6 @@ export const nexusPagService = {
   },
 
   simulatePaymentApproval(paymentId: string): PaymentTransaction | null {
-    // Strictly forbidden in production
     if (process.env.NODE_ENV === 'production') {
       throw new Error('Simulação de pagamento desativada em ambiente de produção.');
     }
@@ -231,13 +219,9 @@ export const nexusPagService = {
     return updated || null;
   },
 
-  /**
-   * Validates HMAC Signature of incoming NexusPag Webhook (Optional if gateway delivers directly)
-   */
   verifyWebhookSignature(rawBody: string | Buffer, signatureHeader?: string): boolean {
     const secret = process.env.NEXUSPAG_WEBHOOK_SECRET || '';
 
-    // If no webhook secret is configured in the gateway, allow direct endpoint delivery
     if (!secret) {
       return true;
     }
