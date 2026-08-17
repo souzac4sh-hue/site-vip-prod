@@ -290,7 +290,7 @@ export const AdminPage: React.FC = () => {
       authorName: newAnnAuthor.trim(),
       role: '',
       message: newAnnMessage.trim(),
-      avatarUrl: newAnnAuthor.toLowerCase().includes('isabella') ? config?.creator.avatarUrl : undefined,
+      avatarUrl: newAnnAuthor.toLowerCase().includes('sara') ? config?.creator.avatarUrl : undefined,
       createdAt: new Date().toISOString(),
       isActive: true,
     };
@@ -1276,7 +1276,7 @@ export const AdminPage: React.FC = () => {
                     type="text"
                     value={newAnnAuthor}
                     onChange={(e) => setNewAnnAuthor(e.target.value)}
-                    placeholder="Nome do Remetente (ex: Equipe de Produção, Isabella)"
+                    placeholder="Nome do Remetente (ex: Equipe de Produção, Sara)"
                     required
                     className="bg-zinc-900 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
                   />

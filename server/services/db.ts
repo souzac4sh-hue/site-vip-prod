@@ -78,11 +78,11 @@ const defaultLiveConfig: LiveConfig = {
   chatEnabled: false,
   autoWelcomeEnabled: false,
   onlineViewersCount: 1480,
-  whatsappLink: 'https://wa.me/5511999999999?text=Oie%20Isabella,%20acabei%20de%20liberar%20meu%20acesso%20de%2030%20dias%20no%20site!',
+  whatsappLink: 'https://wa.me/5511999999999?text=Oie%20Sara,%20acabei%20de%20liberar%20meu%20acesso%20de%2030%20dias%20no%20site!',
   previewsGroupLink: '',
   creator: {
-    name: 'Isabella Fontana',
-    username: 'isabellafontana.vip',
+    name: 'Sara Amorin',
+    username: 'sara.amorinn',
     bio: 'Criadora de conteúdo exclusivo e modelo. Transmissões privadas para apoiadores selecionados.',
     avatarUrl: 'https://i.postimg.cc/HW9QbkSy/rgthree-compare-temp-eszyc-00004-endzu-1785870098.jpg',
     coverUrl: '/creator/cover.jpg',
@@ -122,7 +122,7 @@ let memoryStore: MemoryStore = {
     },
     {
       id: 'ann_init_2',
-      authorName: 'Isabella Fontana',
+      authorName: 'Sara Amorin',
       role: 'CRIADORA',
       avatarUrl: 'https://i.postimg.cc/HW9QbkSy/rgthree-compare-temp-eszyc-00004-endzu-1785870098.jpg',
       message: 'Oie amores! Entrem e fiquem à vontade na sala VIP, estou ao vivo agora! ❤️',
@@ -139,7 +139,7 @@ let memoryStore: MemoryStore = {
     },
     {
       id: 'ann_init_4',
-      authorName: 'Isabella Fontana',
+      authorName: 'Sara Amorin',
       role: 'CRIADORA',
       avatarUrl: 'https://i.postimg.cc/HW9QbkSy/rgthree-compare-temp-eszyc-00004-endzu-1785870098.jpg',
       message: 'Quem garantir o passe agora já ganha acesso direto ao meu WhatsApp privado! 🔥',
