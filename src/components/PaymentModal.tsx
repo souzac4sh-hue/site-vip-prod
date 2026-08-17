@@ -245,22 +245,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             </div>
 
             {/* Realtime Waiting Indicator */}
-            <div className="p-2.5 rounded-xl bg-[#08080c] border border-white/5 flex items-center justify-center gap-2 text-[11px] text-zinc-400">
-              <Loader2 className="w-3 h-3 text-emerald-400 animate-spin" />
+            <div className="p-3 rounded-xl bg-[#08080c] border border-white/5 flex items-center justify-center gap-2 text-xs text-zinc-300">
+              <Loader2 className="w-3.5 h-3.5 text-emerald-400 animate-spin" />
               <span>Aguardando confirmação bancária...</span>
-            </div>
-
-            {/* Sandbox Simulator for Test */}
-            <div className="pt-2 border-t border-white/5">
-              <button
-                type="button"
-                onClick={handleSimulatePayment}
-                disabled={simulating}
-                className="w-full py-2 px-3 rounded-lg bg-[#121218] hover:bg-[#181822] border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
-              >
-                {simulating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                <span>[Ambiente de Teste] Simular PIX Aprovado</span>
-              </button>
             </div>
           </div>
         )}
