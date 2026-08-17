@@ -172,7 +172,7 @@ export function sanitizeConfigUpdates(updates: any): any {
   if (typeof updates.description === 'string') clean.description = sanitizeText(updates.description, 1000);
   if (typeof updates.scheduledAt === 'string') clean.scheduledAt = sanitizeText(updates.scheduledAt, 60);
   if (typeof updates.streamProvider === 'string') clean.streamProvider = sanitizeText(updates.streamProvider, 50);
-  if (typeof updates.streamUrl === 'string') clean.streamUrl = sanitizeSafeUrl(updates.streamUrl);
+  if (typeof updates.streamUrl === 'string') clean.streamUrl = sanitizeSafeUrl(updates.streamUrl) || updates.streamUrl.trim();
 
   if (typeof updates.price === 'number' && updates.price >= 0 && updates.price <= 9999) {
     clean.price = Number(updates.price.toFixed(2));
@@ -180,11 +180,14 @@ export function sanitizeConfigUpdates(updates: any): any {
   if (typeof updates.whatsappPrice === 'number' && updates.whatsappPrice >= 0 && updates.whatsappPrice <= 9999) {
     clean.whatsappPrice = Number(updates.whatsappPrice.toFixed(2));
   }
+  if (typeof updates.accessDurationHours === 'number' && updates.accessDurationHours > 0) {
+    clean.accessDurationHours = Math.floor(updates.accessDurationHours);
+  }
   if (typeof updates.onlineViewersCount === 'number' && updates.onlineViewersCount >= 0) {
     clean.onlineViewersCount = Math.floor(updates.onlineViewersCount);
   }
-  if (typeof updates.whatsappLink === 'string') clean.whatsappLink = sanitizeSafeUrl(updates.whatsappLink);
-  if (typeof updates.previewsGroupLink === 'string') clean.previewsGroupLink = sanitizeSafeUrl(updates.previewsGroupLink);
+  if (typeof updates.whatsappLink === 'string') clean.whatsappLink = sanitizeSafeUrl(updates.whatsappLink) || updates.whatsappLink.trim();
+  if (typeof updates.previewsGroupLink === 'string') clean.previewsGroupLink = sanitizeSafeUrl(updates.previewsGroupLink) || updates.previewsGroupLink.trim();
 
   if (typeof updates.chatEnabled === 'boolean') clean.chatEnabled = updates.chatEnabled;
   if (typeof updates.autoWelcomeEnabled === 'boolean') clean.autoWelcomeEnabled = updates.autoWelcomeEnabled;
@@ -196,9 +199,12 @@ export function sanitizeConfigUpdates(updates: any): any {
       name: sanitizeText(updates.creator.name || '', 100),
       username: sanitizeText(updates.creator.username || '', 100),
       bio: sanitizeText(updates.creator.bio || '', 500),
-      avatarUrl: sanitizeSafeUrl(updates.creator.avatarUrl) || '/creator/avatar.jpg',
-      coverUrl: sanitizeSafeUrl(updates.creator.coverUrl) || '/creator/cover.jpg',
-      whatsappAvatarUrl: sanitizeSafeUrl(updates.creator.whatsappAvatarUrl) || '',
+      avatarUrl: sanitizeSafeUrl(updates.creator.avatarUrl) || updates.creator.avatarUrl || '/creator/avatar.jpg',
+      coverUrl: sanitizeSafeUrl(updates.creator.coverUrl) || updates.creator.coverUrl || '/creator/cover.jpg',
+      whatsappAvatarUrl: sanitizeSafeUrl(updates.creator.whatsappAvatarUrl) || updates.creator.whatsappAvatarUrl || '',
+      previewMediaType: updates.creator.previewMediaType === 'video' ? 'video' : 'image',
+      previewVideoUrl: sanitizeSafeUrl(updates.creator.previewVideoUrl) || updates.creator.previewVideoUrl || '',
+      previewBlur: ['light', 'medium', 'heavy'].includes(updates.creator.previewBlur) ? updates.creator.previewBlur : 'medium',
       badgeText: sanitizeText(updates.creator.badgeText || '', 50),
       whatsappNumber: sanitizeText(updates.creator.whatsappNumber || '', 40),
     };
@@ -229,6 +235,32 @@ export function sanitizeConfigUpdates(updates: any): any {
           }))
         : [],
     };
+  }
+
+  if (updates.announcementConfig && typeof updates.announcementConfig === 'object') {
+    clean.announcementConfig = {
+      enabled: updates.announcementConfig.enabled ?? true,
+      isPaused: updates.announcementConfig.isPaused ?? false,
+      intervalSeconds: Math.max(3, Number(updates.announcementConfig.intervalSeconds) || 8),
+      durationSeconds: Math.max(2, Number(updates.announcementConfig.durationSeconds) || 5),
+      loop: updates.announcementConfig.loop ?? true,
+    };
+  }
+
+  if (Array.isArray(updates.announcements)) {
+    clean.announcements = updates.announcements.slice(0, 50).map((a: any) => ({
+      id: String(a.id || `ann_${Date.now()}`),
+      authorName: sanitizeText(a.authorName || 'Staff', 60),
+      role: sanitizeText(a.role || '', 30),
+      message: sanitizeText(a.message || '', 300),
+      avatarUrl: a.avatarUrl ? sanitizeSafeUrl(a.avatarUrl) || a.avatarUrl : undefined,
+      createdAt: a.createdAt || new Date().toISOString(),
+      isActive: a.isActive ?? true,
+    }));
+  }
+
+  if (Array.isArray(updates.welcomePresets)) {
+    clean.welcomePresets = updates.welcomePresets.slice(0, 10).map((p: any) => sanitizeText(p, 200));
   }
 
   return clean;
