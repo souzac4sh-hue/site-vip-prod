@@ -17,8 +17,8 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Dynamic Data Directory for Railway Volume Persistence (/data) or Local Dev (./data)
-const DATA_DIR = process.env.DATA_DIR || path.resolve(__dirname, '../../data');
+// Dynamic Data Directory for Railway Volume (/data), Vercel (/tmp/data) or Local Dev (./data)
+const DATA_DIR = process.env.DATA_DIR || (process.env.VERCEL ? '/tmp/data' : path.resolve(__dirname, '../../data'));
 const DATA_FILE = path.join(DATA_DIR, 'store.json');
 
 export function generateDisplayName(): string {

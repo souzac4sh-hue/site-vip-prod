@@ -21,7 +21,7 @@ class MemoryAndFsKVStore implements IKVStore {
   private isPersisting = false;
 
   constructor() {
-    this.dataDir = process.env.DATA_DIR || path.resolve(__dirname, '../../data');
+    this.dataDir = process.env.DATA_DIR || (process.env.VERCEL ? '/tmp/data' : path.resolve(__dirname, '../../data'));
     this.kvFile = path.join(this.dataDir, 'kv_store.json');
     this.load();
   }
