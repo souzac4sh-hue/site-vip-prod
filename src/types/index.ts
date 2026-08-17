@@ -29,11 +29,11 @@ export interface StaffAnnouncement {
 }
 
 export interface AnnouncementConfig {
-  enabled: boolean;
-  isPaused: boolean;
-  intervalSeconds: number; // Interval between notices
-  durationSeconds: number; // How long notice stays visible
-  loop: boolean;
+  enabled?: boolean;
+  isPaused?: boolean;
+  intervalSeconds?: number; // Interval between notices
+  durationSeconds?: number; // How long notice stays visible
+  loop?: boolean;
 }
 
 export interface BenefitItem {
@@ -93,8 +93,9 @@ export interface LiveConfig {
   onlineViewersCount?: number; // Number of online viewers displayed on player
   creator: CreatorProfile;
   content: LandingContent;
-  welcomePresets: string[];
-  announcementConfig: AnnouncementConfig;
+  welcomePresets?: string[];
+  announcementConfig?: AnnouncementConfig;
+  announcements?: StaffAnnouncement[];
 }
 
 export interface PaymentTransaction {

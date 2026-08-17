@@ -178,11 +178,6 @@ export const LiveAnnouncementsFeed: React.FC = () => {
                   <span className="font-bold text-white text-xs truncate">
                     {ann.authorName}
                   </span>
-                  {ann.role && (
-                    <span className="px-1.5 py-0.2 rounded bg-white/[0.06] text-[9px] text-zinc-400 font-mono uppercase">
-                      {ann.role}
-                    </span>
-                  )}
                 </div>
 
                 <span className="text-[10px] text-zinc-400 font-mono flex-shrink-0">

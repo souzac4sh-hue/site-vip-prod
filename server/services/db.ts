@@ -224,7 +224,11 @@ export const db = {
         ...memoryStore.liveConfig.announcementConfig,
         ...(updates.announcementConfig || {}),
       },
+      announcements: updates.announcements || memoryStore.announcements,
     };
+    if (updates.announcements && Array.isArray(updates.announcements)) {
+      memoryStore.announcements = updates.announcements;
+    }
     saveStore();
     return memoryStore.liveConfig;
   },

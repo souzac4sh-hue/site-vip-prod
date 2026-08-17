@@ -285,35 +285,42 @@ export const AdminPage: React.FC = () => {
     e.preventDefault();
     if (!newAnnAuthor.trim() || !newAnnMessage.trim()) return;
 
+    const newAnn: StaffAnnouncement = {
+      id: `ann_${Date.now()}`,
+      authorName: newAnnAuthor.trim(),
+      role: '',
+      message: newAnnMessage.trim(),
+      avatarUrl: newAnnAuthor.toLowerCase().includes('isabella') ? config?.creator.avatarUrl : undefined,
+      createdAt: new Date().toISOString(),
+      isActive: true,
+    };
+
+    const updated = [...announcements, newAnn];
+    setAnnouncements(updated);
+    setNewAnnMessage('');
+    setChatFeedback('Comunicado salvo no mural com sucesso!');
+    setTimeout(() => setChatFeedback(''), 4000);
+
     try {
-      const res = await fetch('/api/admin/announcements', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
-        body: JSON.stringify({
-          authorName: newAnnAuthor.trim(),
-          role: 'STAFF',
-          message: newAnnMessage.trim(),
-          avatarUrl: newAnnAuthor.toLowerCase().includes('isabella') ? config?.creator.avatarUrl : undefined,
-          isActive: true,
-        }),
-      });
-      const data = await res.json();
-      if (data.success && data.announcement) {
-        setAnnouncements((prev) => [...prev, data.announcement]);
-        setNewAnnMessage('');
-        setChatFeedback('Comunicado publicado no mural abaixo do player!');
-        setTimeout(() => setChatFeedback(''), 4000);
+      if (config) {
+        await api.updateAdminConfig(token, {
+          ...config,
+          announcements: updated,
+        });
       }
     } catch (e) {}
   };
 
   const handleDeleteAnnouncement = async (id: string) => {
+    const updated = announcements.filter((a) => a.id !== id);
+    setAnnouncements(updated);
     try {
-      await fetch(`/api/admin/announcements/${id}`, {
-        method: 'DELETE',
-        headers: { 'x-admin-token': token },
-      });
-      setAnnouncements((prev) => prev.filter((a) => a.id !== id));
+      if (config) {
+        await api.updateAdminConfig(token, {
+          ...config,
+          announcements: updated,
+        });
+      }
     } catch (e) {}
   };
 
