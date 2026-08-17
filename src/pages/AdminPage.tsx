@@ -137,14 +137,46 @@ export const AdminPage: React.FC = () => {
         }
       } catch (e) {}
 
-      // Load announcements
+      // Load announcements with dual-sync persistence
       try {
+        const savedLocal = localStorage.getItem('pl_admin_custom_announcements');
+        let localList: any[] | null = null;
+        if (savedLocal) {
+          try {
+            const parsed = JSON.parse(savedLocal);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              localList = parsed;
+            }
+          } catch (e) {}
+        }
+
         const annRes = await fetch('/api/admin/announcements', { headers: { 'x-admin-token': token } });
         if (annRes.ok) {
           const annData = await annRes.json();
-          if (annData.success) setAnnouncements(annData.announcements || []);
+          if (localList && localList.length > 0) {
+            setAnnouncements(localList);
+            if (configRes.success && configRes.config) {
+              api.updateAdminConfig(token, {
+                ...configRes.config,
+                announcements: localList,
+              }).catch(() => {});
+            }
+          } else if (annData.success && Array.isArray(annData.announcements)) {
+            setAnnouncements(annData.announcements);
+            localStorage.setItem('pl_admin_custom_announcements', JSON.stringify(annData.announcements));
+          }
+        } else if (localList) {
+          setAnnouncements(localList);
         }
-      } catch (e) {}
+      } catch (e) {
+        const savedLocal = localStorage.getItem('pl_admin_custom_announcements');
+        if (savedLocal) {
+          try {
+            const parsed = JSON.parse(savedLocal);
+            if (Array.isArray(parsed)) setAnnouncements(parsed);
+          } catch (e) {}
+        }
+      }
     } catch (err: any) {
       console.warn('Warning loading admin data:', err);
       if (err?.status === 401) {
@@ -186,9 +218,16 @@ export const AdminPage: React.FC = () => {
     setLoading(true);
     setSaveSuccess('');
     try {
-      const res = await api.updateAdminConfig(token, config);
+      const payload = {
+        ...config,
+        announcements,
+      };
+      const res = await api.updateAdminConfig(token, payload);
       if (res.success) {
         setConfig(res.config);
+        if (Array.isArray(announcements)) {
+          localStorage.setItem('pl_admin_custom_announcements', JSON.stringify(announcements));
+        }
         setSaveSuccess('Configurações salvas com sucesso!');
         setTimeout(() => setSaveSuccess(''), 4000);
       }

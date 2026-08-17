@@ -183,7 +183,7 @@ function initStore() {
         payments: parsed.payments || [],
         accessSessions: parsed.accessSessions || [],
         analyticsEvents: parsed.analyticsEvents || [],
-        announcements: parsed.announcements || memoryStore.announcements,
+        announcements: Array.isArray(parsed.announcements) ? parsed.announcements : memoryStore.announcements,
       };
     } else {
       saveStore();
