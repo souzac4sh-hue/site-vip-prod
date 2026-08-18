@@ -78,7 +78,7 @@ const defaultLiveConfig: LiveConfig = {
   chatEnabled: false,
   autoWelcomeEnabled: false,
   onlineViewersCount: 38,
-  whatsappLink: 'https://wa.me/5511999999999?text=Oie%20Sara,%20acabei%20de%20liberar%20meu%20acesso%20de%2030%20dias%20no%20site!',
+  whatsappLink: 'https://wa.me/5517981912832?text=Oi%20Sara,%20tudo%20bem?%20Tenho%20interesse%20nos%20seus%20conte%C3%BAdos%20exclusivos%20e%20quero%20liberar%20meu%20acesso%20VIP!%20%F0%9F%94%A5',
   previewsGroupLink: '',
   creator: {
     name: 'Sara Amorin',
@@ -91,7 +91,7 @@ const defaultLiveConfig: LiveConfig = {
     previewVideoUrl: '/creator/live.mp4',
     previewBlur: 'medium',
     badgeText: 'MEMBRO VIP',
-    whatsappNumber: '+55 (11) 99999-9999',
+    whatsappNumber: '+55 (17) 98191-2832',
   },
   content: defaultContent,
   welcomePresets: [

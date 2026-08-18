@@ -29,8 +29,8 @@ export const WhatsAppLandingPage: React.FC = () => {
     api.trackEvent('whatsapp_redirect', 'whatsapp_access');
     const link =
       config?.whatsappLink ||
-      `https://wa.me/5511999999999?text=${encodeURIComponent(
-        `Oie ${config?.creator.name || 'amor'}, vim pelo site oficial e quero saber os valores dos packs de fotos/vídeos e chamadas de vídeo!`
+      `https://wa.me/5517981912832?text=${encodeURIComponent(
+        'Oi Sara, tudo bem? Tenho interesse nos seus conteúdos exclusivos e quero liberar meu acesso VIP! 🔥'
       )}`;
     window.open(link, '_blank');
   };
