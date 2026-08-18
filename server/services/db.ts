@@ -62,6 +62,51 @@ const defaultAnnouncementConfig: AnnouncementConfig = {
   loop: true,
 };
 
+export const defaultAnnouncements: StaffAnnouncement[] = [
+  {
+    id: 'ann_init_1',
+    authorName: 'STAFF DA PRODUÇÃO',
+    role: '',
+    message: '🚨 Transmissão Privada VIP iniciada! Garanta seu acesso de 30 dias antes que a sala atinja o limite.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 6).toISOString(),
+    isActive: true,
+  },
+  {
+    id: 'ann_init_2',
+    authorName: 'Sara Amorin',
+    role: '',
+    avatarUrl: 'https://i.postimg.cc/HW9QbkSy/rgthree-compare-temp-eszyc-00004-endzu-1785870098.jpg',
+    message: 'Oie amores! Entrem e fiquem à vontade na sala VIP, estou ao vivo agora! ❤️',
+    createdAt: new Date(Date.now() - 1000 * 60 * 4).toISOString(),
+    isActive: true,
+  },
+  {
+    id: 'ann_init_3',
+    authorName: 'SUPORTE VIP',
+    role: '',
+    message: 'ℹ️ Pagamentos via PIX são aprovados instantaneamente e liberam a live e o WhatsApp na hora.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
+    isActive: true,
+  },
+  {
+    id: 'ann_init_4',
+    authorName: 'Sara Amorin',
+    role: '',
+    avatarUrl: 'https://i.postimg.cc/HW9QbkSy/rgthree-compare-temp-eszyc-00004-endzu-1785870098.jpg',
+    message: 'Quem garantir o passe agora já ganha acesso direto ao meu WhatsApp privado! 🔥',
+    createdAt: new Date(Date.now() - 1000 * 30).toISOString(),
+    isActive: true,
+  },
+  {
+    id: 'ann_init_5',
+    authorName: 'MODERAÇÃO',
+    role: '',
+    message: '🔒 Transmissão 100% discreta e sem rastros. Aproveitem a live em alta definição 1080p.',
+    createdAt: new Date().toISOString(),
+    isActive: true,
+  },
+];
+
 const defaultLiveConfig: LiveConfig = {
   status: 'live',
   title: 'Transmissão Privada VIP • Edição Especial',
@@ -99,6 +144,7 @@ const defaultLiveConfig: LiveConfig = {
     'Seu acesso de 30 dias está ativo! O WhatsApp da modelo está liberado.',
   ],
   announcementConfig: defaultAnnouncementConfig,
+  announcements: defaultAnnouncements,
 };
 
 interface MemoryStore {
@@ -114,50 +160,7 @@ let memoryStore: MemoryStore = {
   payments: [],
   accessSessions: [],
   analyticsEvents: [],
-  announcements: [
-    {
-      id: 'ann_init_1',
-      authorName: 'STAFF DA PRODUÇÃO',
-      role: 'PRODUÇÃO',
-      message: '🚨 Transmissão Privada VIP iniciada! Garanta seu acesso de 30 dias antes que a sala atinja o limite.',
-      createdAt: new Date(Date.now() - 1000 * 60 * 6).toISOString(),
-      isActive: true,
-    },
-    {
-      id: 'ann_init_2',
-      authorName: 'Sara Amorin',
-      role: 'CRIADORA',
-      avatarUrl: 'https://i.postimg.cc/HW9QbkSy/rgthree-compare-temp-eszyc-00004-endzu-1785870098.jpg',
-      message: 'Oie amores! Entrem e fiquem à vontade na sala VIP, estou ao vivo agora! ❤️',
-      createdAt: new Date(Date.now() - 1000 * 60 * 4).toISOString(),
-      isActive: true,
-    },
-    {
-      id: 'ann_init_3',
-      authorName: 'SUPORTE VIP',
-      role: 'SISTEMA',
-      message: 'ℹ️ Pagamentos via PIX são aprovados instantaneamente e liberam a live e o WhatsApp na hora.',
-      createdAt: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
-      isActive: true,
-    },
-    {
-      id: 'ann_init_4',
-      authorName: 'Sara Amorin',
-      role: 'CRIADORA',
-      avatarUrl: 'https://i.postimg.cc/HW9QbkSy/rgthree-compare-temp-eszyc-00004-endzu-1785870098.jpg',
-      message: 'Quem garantir o passe agora já ganha acesso direto ao meu WhatsApp privado! 🔥',
-      createdAt: new Date(Date.now() - 1000 * 30).toISOString(),
-      isActive: true,
-    },
-    {
-      id: 'ann_init_5',
-      authorName: 'MODERAÇÃO',
-      role: 'STAFF',
-      message: '🔒 Transmissão 100% discreta e sem rastros. Aproveitem a live em alta definição 1080p.',
-      createdAt: new Date().toISOString(),
-      isActive: true,
-    },
-  ],
+  announcements: defaultAnnouncements,
 };
 
 function initStore() {
@@ -179,11 +182,16 @@ function initStore() {
           creator: { ...defaultLiveConfig.creator, ...(parsed.liveConfig?.creator || {}) },
           welcomePresets: parsed.liveConfig?.welcomePresets || defaultLiveConfig.welcomePresets,
           announcementConfig: { ...defaultAnnouncementConfig, ...(parsed.liveConfig?.announcementConfig || {}) },
+          announcements: Array.isArray(parsed.liveConfig?.announcements) && parsed.liveConfig.announcements.length > 0
+            ? parsed.liveConfig.announcements
+            : defaultAnnouncements,
         },
         payments: parsed.payments || [],
         accessSessions: parsed.accessSessions || [],
         analyticsEvents: parsed.analyticsEvents || [],
-        announcements: Array.isArray(parsed.announcements) ? parsed.announcements : memoryStore.announcements,
+        announcements: Array.isArray(parsed.announcements) && parsed.announcements.length > 0
+          ? parsed.announcements
+          : defaultAnnouncements,
       };
     } else {
       saveStore();

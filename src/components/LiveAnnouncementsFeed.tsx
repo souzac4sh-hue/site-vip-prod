@@ -7,13 +7,58 @@ interface DisplayAnnouncement extends StaffAnnouncement {
   isNew?: boolean;
 }
 
+const permanentDefaultAnnouncements: StaffAnnouncement[] = [
+  {
+    id: 'ann_init_1',
+    authorName: 'STAFF DA PRODUÇÃO',
+    role: '',
+    message: '🚨 Transmissão Privada VIP iniciada! Garanta seu acesso de 30 dias antes que a sala atinja o limite.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 6).toISOString(),
+    isActive: true,
+  },
+  {
+    id: 'ann_init_2',
+    authorName: 'Sara Amorin',
+    role: '',
+    avatarUrl: 'https://i.postimg.cc/HW9QbkSy/rgthree-compare-temp-eszyc-00004-endzu-1785870098.jpg',
+    message: 'Oie amores! Entrem e fiquem à vontade na sala VIP, estou ao vivo agora! ❤️',
+    createdAt: new Date(Date.now() - 1000 * 60 * 4).toISOString(),
+    isActive: true,
+  },
+  {
+    id: 'ann_init_3',
+    authorName: 'SUPORTE VIP',
+    role: '',
+    message: 'ℹ️ Pagamentos via PIX são aprovados instantaneamente e liberam a live e o WhatsApp na hora.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
+    isActive: true,
+  },
+  {
+    id: 'ann_init_4',
+    authorName: 'Sara Amorin',
+    role: '',
+    avatarUrl: 'https://i.postimg.cc/HW9QbkSy/rgthree-compare-temp-eszyc-00004-endzu-1785870098.jpg',
+    message: 'Quem garantir o passe agora já ganha acesso direto ao meu WhatsApp privado! 🔥',
+    createdAt: new Date(Date.now() - 1000 * 30).toISOString(),
+    isActive: true,
+  },
+  {
+    id: 'ann_init_5',
+    authorName: 'MODERAÇÃO',
+    role: '',
+    message: '🔒 Transmissão 100% discreta e sem rastros. Aproveitem a live em alta definição 1080p.',
+    createdAt: new Date().toISOString(),
+    isActive: true,
+  },
+];
+
 export const LiveAnnouncementsFeed: React.FC = () => {
-  const [allAnnouncements, setAllAnnouncements] = useState<StaffAnnouncement[]>([]);
+  const [allAnnouncements, setAllAnnouncements] = useState<StaffAnnouncement[]>(permanentDefaultAnnouncements);
   const [feed, setFeed] = useState<DisplayAnnouncement[]>([]);
   const [config, setConfig] = useState<AnnouncementConfig>({
     enabled: true,
     isPaused: false,
-    intervalSeconds: 8,
+    intervalSeconds: 6,
     durationSeconds: 5,
     loop: true,
   });
