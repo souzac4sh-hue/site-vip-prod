@@ -30,6 +30,7 @@ import {
   Image,
   HelpCircle,
   Check,
+  Loader2,
 } from 'lucide-react';
 import { api } from '../utils/api';
 import { TurnstileChallenge } from '../components/TurnstileChallenge';
@@ -101,9 +102,10 @@ export const AdminPage: React.FC = () => {
   }, [token]);
 
   const loadAllData = async () => {
+    if (!token) return;
     setLoading(true);
     try {
-      const [statsRes, metricsRes, configRes, paymentsRes, sessionsRes] = await Promise.all([
+      const results = await Promise.allSettled([
         api.getAdminStats(token),
         api.getAdminMetrics(token),
         api.getAdminConfig(token),
@@ -111,13 +113,35 @@ export const AdminPage: React.FC = () => {
         api.getAdminSessions(token),
       ]);
 
-      if (statsRes.success) setStats(statsRes.stats);
-      if (metricsRes.success) setMetrics(metricsRes.metrics);
-      if (configRes.success) {
-        setConfig(configRes.config);
+      const [statsRes, metricsRes, configRes, paymentsRes, sessionsRes] = results;
+
+      if (statsRes.status === 'fulfilled' && statsRes.value?.success) {
+        setStats(statsRes.value.stats);
       }
-      if (paymentsRes.success) setPayments(paymentsRes.payments);
-      if (sessionsRes.success) setSessions(sessionsRes.sessions);
+      if (metricsRes.status === 'fulfilled' && metricsRes.value?.success) {
+        setMetrics(metricsRes.value.metrics);
+      }
+      if (configRes.status === 'fulfilled' && configRes.value?.success && configRes.value.config) {
+        setConfig(configRes.value.config);
+        if (Array.isArray(configRes.value.config.announcements) && configRes.value.config.announcements.length > 0) {
+          setAnnouncements(configRes.value.config.announcements);
+        }
+      }
+      if (paymentsRes.status === 'fulfilled' && paymentsRes.value?.success) {
+        setPayments(paymentsRes.value.payments || []);
+      }
+      if (sessionsRes.status === 'fulfilled' && sessionsRes.value?.success) {
+        setSessions(sessionsRes.value.sessions || []);
+      }
+
+      // Check for 401 across results
+      for (const res of results) {
+        if (res.status === 'rejected' && (res.reason?.status === 401 || res.reason?.message?.includes('401'))) {
+          localStorage.removeItem('pl_admin_token');
+          setToken('');
+          return;
+        }
+      }
 
       // Load active chat users
       try {
@@ -137,43 +161,22 @@ export const AdminPage: React.FC = () => {
         }
       } catch (e) {}
 
-      // Load announcements with dual-sync persistence
+      // Load announcements with dual-sync fallback
       try {
-        const savedLocal = localStorage.getItem('pl_admin_custom_announcements');
-        let localList: any[] | null = null;
-        if (savedLocal) {
-          try {
-            const parsed = JSON.parse(savedLocal);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              localList = parsed;
-            }
-          } catch (e) {}
-        }
-
         const annRes = await fetch('/api/admin/announcements', { headers: { 'x-admin-token': token } });
         if (annRes.ok) {
           const annData = await annRes.json();
-          if (localList && localList.length > 0) {
-            setAnnouncements(localList);
-            if (configRes.success && configRes.config) {
-              api.updateAdminConfig(token, {
-                ...configRes.config,
-                announcements: localList,
-              }).catch(() => {});
-            }
-          } else if (annData.success && Array.isArray(annData.announcements)) {
+          if (annData.success && Array.isArray(annData.announcements) && annData.announcements.length > 0) {
             setAnnouncements(annData.announcements);
             localStorage.setItem('pl_admin_custom_announcements', JSON.stringify(annData.announcements));
           }
-        } else if (localList) {
-          setAnnouncements(localList);
         }
       } catch (e) {
         const savedLocal = localStorage.getItem('pl_admin_custom_announcements');
         if (savedLocal) {
           try {
             const parsed = JSON.parse(savedLocal);
-            if (Array.isArray(parsed)) setAnnouncements(parsed);
+            if (Array.isArray(parsed) && parsed.length > 0) setAnnouncements(parsed);
           } catch (e) {}
         }
       }
@@ -428,6 +431,41 @@ export const AdminPage: React.FC = () => {
               Acessar Painel
             </button>
           </form>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading && !config) {
+    return (
+      <div className="min-h-screen bg-[#080808] flex flex-col items-center justify-center p-4">
+        <Loader2 className="w-8 h-8 text-brand-500 animate-spin mb-4" />
+        <p className="text-xs text-zinc-400 font-mono">Carregando painel administrativo...</p>
+      </div>
+    );
+  }
+
+  if (!config) {
+    return (
+      <div className="min-h-screen bg-[#080808] flex flex-col items-center justify-center p-4 text-center">
+        <AlertTriangle className="w-10 h-10 text-rose-500 mb-4" />
+        <h2 className="text-lg font-bold text-white mb-2">Erro ao sincronizar dados</h2>
+        <p className="text-xs text-zinc-400 mb-6 max-w-sm">
+          Sua sessão pode ter expirado ou o servidor está respondendo. Tente recarregar ou faça login novamente.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={loadAllData}
+            className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold transition-all"
+          >
+            Tentar Novamente
+          </button>
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold transition-all"
+          >
+            Fazer Login Novamente
+          </button>
         </div>
       </div>
     );
