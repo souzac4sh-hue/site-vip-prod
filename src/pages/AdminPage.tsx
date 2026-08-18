@@ -161,25 +161,47 @@ export const AdminPage: React.FC = () => {
         }
       } catch (e) {}
 
-      // Load announcements with dual-sync fallback
+      // Load announcements with non-destructive merge (preserves user-created notices)
       try {
-        const annRes = await fetch('/api/admin/announcements', { headers: { 'x-admin-token': token } });
-        if (annRes.ok) {
-          const annData = await annRes.json();
-          if (annData.success && Array.isArray(annData.announcements) && annData.announcements.length > 0) {
-            setAnnouncements(annData.announcements);
-            localStorage.setItem('pl_admin_custom_announcements', JSON.stringify(annData.announcements));
-          }
-        }
-      } catch (e) {
         const savedLocal = localStorage.getItem('pl_admin_custom_announcements');
+        let localList: StaffAnnouncement[] = [];
         if (savedLocal) {
           try {
             const parsed = JSON.parse(savedLocal);
-            if (Array.isArray(parsed) && parsed.length > 0) setAnnouncements(parsed);
+            if (Array.isArray(parsed)) localList = parsed;
           } catch (e) {}
         }
-      }
+
+        const annRes = await fetch('/api/admin/announcements', { headers: { 'x-admin-token': token } });
+        let serverList: StaffAnnouncement[] = [];
+        if (annRes.ok) {
+          const annData = await annRes.json();
+          if (annData.success && Array.isArray(annData.announcements)) {
+            serverList = annData.announcements;
+          }
+        }
+
+        // Merge serverList + localList without duplicates by message content
+        const mergedMap = new Map<string, StaffAnnouncement>();
+        for (const a of serverList) {
+          if (a && a.message) mergedMap.set(a.message.trim(), a);
+        }
+        for (const a of localList) {
+          if (a && a.message) mergedMap.set(a.message.trim(), a);
+        }
+
+        const finalList = Array.from(mergedMap.values());
+        if (finalList.length > 0) {
+          setAnnouncements(finalList);
+          localStorage.setItem('pl_admin_custom_announcements', JSON.stringify(finalList));
+          if (configRes.status === 'fulfilled' && configRes.value?.config) {
+            api.updateAdminConfig(token, {
+              ...configRes.value.config,
+              announcements: finalList,
+            }).catch(() => {});
+          }
+        }
+      } catch (e) {}
     } catch (err: any) {
       console.warn('Warning loading admin data:', err);
       if (err?.status === 401) {

@@ -105,6 +105,23 @@ export const defaultAnnouncements: StaffAnnouncement[] = [
     createdAt: new Date().toISOString(),
     isActive: true,
   },
+  {
+    id: 'ann_init_6',
+    authorName: 'Sara Amorin',
+    role: '',
+    avatarUrl: 'https://i.postimg.cc/HW9QbkSy/rgthree-compare-temp-eszyc-00004-endzu-1785870098.jpg',
+    message: 'Já estou no chat com quem entrou! Vem comigo antes de começar a parte especial 💋',
+    createdAt: new Date().toISOString(),
+    isActive: true,
+  },
+  {
+    id: 'ann_init_7',
+    authorName: 'SUPORTE VIP',
+    role: '',
+    message: '⚠️ O acesso de 30 dias dá direito a todas as transmissões do mês.',
+    createdAt: new Date().toISOString(),
+    isActive: true,
+  },
 ];
 
 const defaultLiveConfig: LiveConfig = {
