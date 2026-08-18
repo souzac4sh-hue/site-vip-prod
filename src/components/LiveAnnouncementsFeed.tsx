@@ -34,34 +34,53 @@ export const LiveAnnouncementsFeed: React.FC = () => {
     async function loadData() {
       try {
         const res = await fetch('/api/announcements');
-        if (res.ok && isMounted) {
+        let announcementsList: StaffAnnouncement[] = [];
+
+        if (res.ok) {
           const data = await res.json();
-          if (data.success && data.announcements && data.announcements.length > 0) {
-            setAllAnnouncements(data.announcements);
-            if (data.config) {
-              setConfig(data.config);
-            }
-
-            // Start with the initial 1 or 2 messages with realistic prior times
-            const initialList: DisplayAnnouncement[] = [];
-            if (data.announcements.length > 0) {
-              initialList.push({
-                ...data.announcements[0],
-                displayTime: getLocalBrowserTime(2), // 2 mins ago
-              });
-            }
-            if (data.announcements.length > 1) {
-              initialList.push({
-                ...data.announcements[1],
-                displayTime: getLocalBrowserTime(1), // 1 min ago
-              });
-              currentIndexRef.current = 2;
-            } else {
-              currentIndexRef.current = 1;
-            }
-
-            setFeed(initialList);
+          if (data.success && Array.isArray(data.announcements) && data.announcements.length > 0) {
+            announcementsList = data.announcements;
           }
+          if (data.config) {
+            setConfig(data.config);
+          }
+        }
+
+        // Check localStorage fallback
+        if (announcementsList.length === 0) {
+          const savedLocal = localStorage.getItem('pl_admin_custom_announcements');
+          if (savedLocal) {
+            try {
+              const parsed = JSON.parse(savedLocal);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                announcementsList = parsed;
+              }
+            } catch (e) {}
+          }
+        }
+
+        if (isMounted && announcementsList.length > 0) {
+          setAllAnnouncements(announcementsList);
+
+          // Start with the first 2 messages or 1 message with initial browser timestamps
+          const initialList: DisplayAnnouncement[] = [];
+          if (announcementsList.length > 0) {
+            initialList.push({
+              ...announcementsList[0],
+              displayTime: getLocalBrowserTime(2), // 2 mins ago
+            });
+          }
+          if (announcementsList.length > 1) {
+            initialList.push({
+              ...announcementsList[1],
+              displayTime: getLocalBrowserTime(1), // 1 min ago
+            });
+            currentIndexRef.current = 2;
+          } else {
+            currentIndexRef.current = 1;
+          }
+
+          setFeed(initialList);
         }
       } catch (e) {
         console.error('Error fetching announcements:', e);
@@ -77,47 +96,39 @@ export const LiveAnnouncementsFeed: React.FC = () => {
     };
   }, []);
 
-  // 2. Sequential Realtime Streaming into the Feed
+  // 2. Sequential Realtime Streaming into the Feed (Cycles ALL announcements reliably)
   useEffect(() => {
     if (allAnnouncements.length === 0 || !config.enabled || config.isPaused) {
       return;
     }
 
-    const intervalMs = Math.max(3, config.intervalSeconds || 8) * 1000;
+    const intervalMs = Math.max(3, config.intervalSeconds || 6) * 1000;
 
     const timer = setInterval(() => {
-      if (allAnnouncements.length === 0) return;
+      setAllAnnouncements((currentList) => {
+        if (currentList.length === 0) return currentList;
 
-      const idx = currentIndexRef.current;
+        const currentIdx = currentIndexRef.current % currentList.length;
+        const nextItem = currentList[currentIdx];
 
-      if (idx < allAnnouncements.length) {
-        const nextItem = allAnnouncements[idx];
-        const newEntry: DisplayAnnouncement = {
-          ...nextItem,
-          id: `${nextItem.id}_${Date.now()}`,
-          displayTime: getLocalBrowserTime(0), // exact current local time
-          isNew: true,
-        };
+        if (nextItem) {
+          const newEntry: DisplayAnnouncement = {
+            ...nextItem,
+            id: `${nextItem.id}_${Date.now()}`,
+            displayTime: getLocalBrowserTime(0), // exact browser local time
+            isNew: true,
+          };
 
-        setFeed((prev) => [...prev.slice(-8), newEntry]); // keep clean last 8 messages
-        currentIndexRef.current = idx + 1;
-      } else if (config.loop) {
-        // Restart loop seamlessly
-        const firstItem = allAnnouncements[0];
-        const newEntry: DisplayAnnouncement = {
-          ...firstItem,
-          id: `${firstItem.id}_${Date.now()}`,
-          displayTime: getLocalBrowserTime(0),
-          isNew: true,
-        };
+          setFeed((prev) => [...prev.slice(-25), newEntry]); // keep full history of 25 messages
+        }
 
-        setFeed((prev) => [...prev.slice(-8), newEntry]);
-        currentIndexRef.current = 1;
-      }
+        currentIndexRef.current = (currentIdx + 1) % currentList.length;
+        return currentList;
+      });
     }, intervalMs);
 
     return () => clearInterval(timer);
-  }, [allAnnouncements, config]);
+  }, [allAnnouncements.length, config.enabled, config.isPaused, config.intervalSeconds]);
 
   // 3. Smooth auto-scroll to the bottom when new message arrives
   useEffect(() => {
