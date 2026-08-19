@@ -129,6 +129,7 @@ const ALLOWED_EVENT_TYPES = new Set([
   'whatsapp_open',
   'whatsapp_redirect',
   'previews_group_click',
+  'teaser_ended',
 ]);
 
 const ALLOWED_PRODUCTS = new Set(['live_access', 'whatsapp_access']);

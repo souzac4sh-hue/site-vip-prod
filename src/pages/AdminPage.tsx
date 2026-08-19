@@ -584,10 +584,11 @@ export const AdminPage: React.FC = () => {
         {/* TAB 1: VISÃO GERAL */}
         {activeTab === 'overview' && stats && (
           <div className="space-y-8 animate-fade-in">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+              {/* Card 1: Faturamento */}
               <div className="p-5 rounded-2xl glass-card border border-white/[0.06]">
                 <div className="flex items-center justify-between text-zinc-400 mb-2">
-                  <span className="text-xs font-mono uppercase tracking-wider">Faturamento Total</span>
+                  <span className="text-[11px] font-mono uppercase tracking-wider">Faturamento</span>
                   <DollarSign className="w-4 h-4 text-emerald-400" />
                 </div>
                 <span className="text-2xl font-black text-white font-sans">
@@ -598,31 +599,62 @@ export const AdminPage: React.FC = () => {
                 </span>
               </div>
 
+              {/* Card 2: PIX Gerados */}
               <div className="p-5 rounded-2xl glass-card border border-white/[0.06]">
                 <div className="flex items-center justify-between text-zinc-400 mb-2">
-                  <span className="text-xs font-mono uppercase tracking-wider">Pagamentos Aprovados</span>
-                  <CreditCard className="w-4 h-4 text-emerald-400" />
+                  <span className="text-[11px] font-mono uppercase tracking-wider">PIX Gerados</span>
+                  <CreditCard className="w-4 h-4 text-amber-400" />
                 </div>
-                <span className="text-2xl font-black text-white font-sans">{stats.paidPayments}</span>
-                <span className="text-[11px] text-zinc-400 block mt-1">De {stats.totalPayments} cobranças geradas</span>
+                <span className="text-2xl font-black text-white font-sans">{stats.totalPayments}</span>
+                <span className="text-[11px] text-amber-400 block mt-1">
+                  Hoje: {stats.todayPayments ?? 0} gerados
+                </span>
               </div>
 
+              {/* Card 3: PIX Pagos */}
               <div className="p-5 rounded-2xl glass-card border border-white/[0.06]">
                 <div className="flex items-center justify-between text-zinc-400 mb-2">
-                  <span className="text-xs font-mono uppercase tracking-wider">Cliques no WhatsApp</span>
+                  <span className="text-[11px] font-mono uppercase tracking-wider">PIX Pagos</span>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                </div>
+                <span className="text-2xl font-black text-emerald-400 font-sans">{stats.paidPayments}</span>
+                <span className="text-[11px] text-emerald-400 block mt-1">
+                  Hoje: {stats.todayPaidPayments ?? 0} aprovados
+                </span>
+              </div>
+
+              {/* Card 4: Pessoas no Site */}
+              <div className="p-5 rounded-2xl glass-card border border-white/[0.06]">
+                <div className="flex items-center justify-between text-zinc-400 mb-2">
+                  <span className="text-[11px] font-mono uppercase tracking-wider">Pessoas no Site</span>
+                  <Eye className="w-4 h-4 text-cyan-400" />
+                </div>
+                <span className="text-2xl font-black text-white font-sans">
+                  {stats.uniqueVisitorsTotal ?? stats.totalPayments}
+                </span>
+                <span className="text-[11px] text-cyan-400 block mt-1">
+                  Hoje: {stats.uniqueVisitorsToday ?? 0} pessoas
+                </span>
+              </div>
+
+              {/* Card 5: WhatsApp */}
+              <div className="p-5 rounded-2xl glass-card border border-white/[0.06]">
+                <div className="flex items-center justify-between text-zinc-400 mb-2">
+                  <span className="text-[11px] font-mono uppercase tracking-wider">WhatsApp</span>
                   <MessageCircle className="w-4 h-4 text-emerald-400" />
                 </div>
                 <span className="text-2xl font-black text-white font-sans">{stats.whatsappRedirects || 0}</span>
-                <span className="text-[11px] text-emerald-400 block mt-1">Pessoas que chamaram</span>
+                <span className="text-[11px] text-emerald-400 block mt-1">Cliques no Zap</span>
               </div>
 
+              {/* Card 6: Acessos Ativos */}
               <div className="p-5 rounded-2xl glass-card border border-white/[0.06]">
                 <div className="flex items-center justify-between text-zinc-400 mb-2">
-                  <span className="text-xs font-mono uppercase tracking-wider">Acessos Ativos</span>
+                  <span className="text-[11px] font-mono uppercase tracking-wider">Passes Ativos</span>
                   <Users className="w-4 h-4 text-brand-400" />
                 </div>
                 <span className="text-2xl font-black text-white font-sans">{stats.activeSessions}</span>
-                <span className="text-[11px] text-zinc-400 block mt-1">Compradores com passe ativo</span>
+                <span className="text-[11px] text-zinc-400 block mt-1">Membros VIP 30d</span>
               </div>
             </div>
 
@@ -1562,7 +1594,67 @@ export const AdminPage: React.FC = () => {
         {/* TAB 6: MÉTRICAS & ANÁLISE SEPARADA POR PÁGINA */}
         {activeTab === 'metrics' && metrics && (
           <div className="space-y-8 animate-fade-in max-w-5xl">
-            {/* 1. SEÇÃO: LANDING PAGE PRINCIPAL */}
+            {/* 1. SEÇÃO: RESUMO EXECUTIVO DO SITE */}
+            <div className="p-6 rounded-2xl glass-card border border-white/[0.08] space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
+                    Resumo Geral de Tráfego & Pessoas no Site
+                  </h3>
+                </div>
+                <span className="text-xs text-zinc-400 font-mono">Audiência Real</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-4 rounded-xl bg-zinc-900/80 border border-white/5">
+                  <span className="text-[11px] text-zinc-400 font-mono uppercase tracking-wider block mb-1">
+                    Pessoas Únicas (Total)
+                  </span>
+                  <span className="text-2xl font-black text-white">
+                    {metrics.uniqueVisitorsTotal ?? metrics.pageViews}
+                  </span>
+                  <span className="text-[10px] text-zinc-400 block mt-1">Visitantes distintos</span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-zinc-900/80 border border-white/5">
+                  <span className="text-[11px] text-zinc-400 font-mono uppercase tracking-wider block mb-1">
+                    Pessoas Únicas (Hoje)
+                  </span>
+                  <span className="text-2xl font-black text-cyan-400">
+                    {metrics.uniqueVisitorsToday ?? metrics.viewsToday}
+                  </span>
+                  <span className="text-[10px] text-cyan-400/80 block mt-1">Entraram hoje</span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-zinc-900/80 border border-white/5">
+                  <span className="text-[11px] text-zinc-400 font-mono uppercase tracking-wider block mb-1">
+                    Visualizações de Página
+                  </span>
+                  <span className="text-2xl font-black text-white">
+                    {metrics.pageViews}
+                  </span>
+                  <span className="text-[10px] text-zinc-400 block mt-1">Total de pageviews</span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/25">
+                  <span className="text-[11px] text-emerald-400 font-mono uppercase tracking-wider block mb-1">
+                    Online nos Últimos 5 Min
+                  </span>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-2xl font-black text-emerald-400">
+                      {metrics.activeVisitorsNow}
+                    </span>
+                    <span className="text-xs font-bold text-emerald-300 font-mono">
+                      em tempo real
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-zinc-400 block mt-1">Navegando no site</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. SEÇÃO: LANDING PAGE PRINCIPAL */}
             <div className="p-6 rounded-2xl glass-card border border-white/[0.08] space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-white/5">
                 <div className="flex items-center gap-2">
@@ -1571,7 +1663,7 @@ export const AdminPage: React.FC = () => {
                     1. Landing Page Principal (Live R$ 9,90 • "/")
                   </h3>
                 </div>
-                <span className="text-xs text-zinc-400 font-mono">Conversão da Oferta</span>
+                <span className="text-xs text-zinc-400 font-mono">Funil de Conversão</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1582,6 +1674,9 @@ export const AdminPage: React.FC = () => {
                   <span className="text-2xl font-black text-white">
                     {metrics.homePage?.views ?? metrics.pageViews}
                   </span>
+                  <span className="text-[10px] text-zinc-400 block mt-1">
+                    Únicos: {metrics.homePage?.uniqueViews ?? metrics.homePage?.views ?? 0}
+                  </span>
                 </div>
 
                 <div className="p-4 rounded-xl bg-zinc-900/80 border border-white/5">
@@ -1591,20 +1686,22 @@ export const AdminPage: React.FC = () => {
                   <span className="text-2xl font-black text-white">
                     {metrics.homePage?.ctaClicks ?? metrics.ctaClicks}
                   </span>
+                  <span className="text-[10px] text-zinc-400 block mt-1">Intenção de compra</span>
                 </div>
 
                 <div className="p-4 rounded-xl bg-zinc-900/80 border border-white/5">
-                  <span className="text-[11px] text-zinc-400 font-mono uppercase tracking-wider block mb-1">
+                  <span className="text-[11px] text-amber-400 font-mono uppercase tracking-wider block mb-1">
                     PIX Gerados
                   </span>
-                  <span className="text-2xl font-black text-white">
+                  <span className="text-2xl font-black text-amber-400">
                     {metrics.homePage?.checkoutsStarted ?? metrics.checkoutsStarted}
                   </span>
+                  <span className="text-[10px] text-zinc-400 block mt-1">QR Code aberto</span>
                 </div>
 
                 <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/25">
                   <span className="text-[11px] text-emerald-400 font-mono uppercase tracking-wider block mb-1">
-                    Pagamentos Confirmados
+                    PIX Pagos / Confirmados
                   </span>
                   <div className="flex items-baseline justify-between">
                     <span className="text-2xl font-black text-emerald-400">
@@ -1614,11 +1711,12 @@ export const AdminPage: React.FC = () => {
                       {metrics.homePage?.conversionRate ?? metrics.conversionRate}% taxa
                     </span>
                   </div>
+                  <span className="text-[10px] text-zinc-400 block mt-1">Vendas aprovadas</span>
                 </div>
               </div>
             </div>
 
-            {/* 2. SEÇÃO: PÁGINA DO WHATSAPP */}
+            {/* 3. SEÇÃO: PÁGINA DO WHATSAPP */}
             <div className="p-6 rounded-2xl glass-card border border-emerald-500/20 space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-white/5">
                 <div className="flex items-center gap-2">
@@ -1637,6 +1735,9 @@ export const AdminPage: React.FC = () => {
                   </span>
                   <span className="text-2xl font-black text-white">
                     {metrics.whatsappPage?.views ?? 0}
+                  </span>
+                  <span className="text-[10px] text-zinc-400 block mt-1">
+                    Únicos: {metrics.whatsappPage?.uniqueViews ?? metrics.whatsappPage?.views ?? 0}
                   </span>
                 </div>
 
@@ -1667,50 +1768,62 @@ export const AdminPage: React.FC = () => {
               </div>
             </div>
 
-            {/* 3. SEÇÃO: SALA PRIVADA & TRÁFEGO GERAL */}
+            {/* 4. SEÇÃO: ORIGEM DO TRÁFEGO & DISPOSITIVOS */}
             <div className="p-6 rounded-2xl glass-card border border-white/[0.08] space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-white/5">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-brand-500" />
                   <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-                    3. Sala Privada Ao Vivo ("/live") & Dispositivos
+                    3. Origem do Tráfego & Dispositivos
                   </h3>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-4 rounded-xl bg-zinc-900/80 border border-white/5">
-                  <span className="text-[11px] text-zinc-400 font-mono uppercase tracking-wider block mb-1">
-                    Entradas na Sala VIP (/live)
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-zinc-900/80 border border-white/5 space-y-3">
+                  <span className="text-xs font-bold text-white block">
+                    Origem dos Visitantes (Top Referers)
                   </span>
-                  <span className="text-2xl font-black text-white">
-                    {metrics.liveRoom?.liveEnters ?? metrics.liveEnters}
-                  </span>
+                  <div className="space-y-2">
+                    {metrics.topReferers && metrics.topReferers.length > 0 ? (
+                      metrics.topReferers.map((r, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-white/5">
+                          <span className="text-zinc-300 capitalize">{r.referer}</span>
+                          <span className="font-mono font-bold text-white">{r.count} visitas</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-zinc-400">Tráfego direto / sem referenciador registrado.</p>
+                    )}
+                  </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-zinc-900/80 border border-white/5">
-                  <span className="text-[11px] text-zinc-400 font-mono uppercase tracking-wider block mb-1">
-                    Visitantes Online Agora
+                <div className="p-4 rounded-xl bg-zinc-900/80 border border-white/5 space-y-3">
+                  <span className="text-xs font-bold text-white block">
+                    Dispositivos Utilizados
                   </span>
-                  <span className="text-2xl font-black text-emerald-400">
-                    {metrics.activeVisitorsNow}
-                  </span>
-                </div>
-
-                <div className="p-4 rounded-xl bg-zinc-900/80 border border-white/5">
-                  <span className="text-[11px] text-zinc-400 font-mono uppercase tracking-wider block mb-1">
-                    Tráfego Mobile
-                  </span>
-                  <span className="text-2xl font-black text-amber-400">
-                    {metrics.deviceBreakdown.mobile + metrics.deviceBreakdown.desktop > 0
-                      ? Math.round(
-                          (metrics.deviceBreakdown.mobile /
-                            (metrics.deviceBreakdown.mobile + metrics.deviceBreakdown.desktop || 1)) *
-                            100
-                        )
-                      : 100}
-                    %
-                  </span>
+                  <div className="space-y-3 pt-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-zinc-300">📱 Celulares (Mobile)</span>
+                      <span className="font-mono font-bold text-white">
+                        {metrics.deviceBreakdown.mobile} visitas ({metrics.deviceBreakdown.mobile + metrics.deviceBreakdown.desktop > 0 ? Math.round((metrics.deviceBreakdown.mobile / (metrics.deviceBreakdown.mobile + metrics.deviceBreakdown.desktop || 1)) * 100) : 100}%)
+                      </span>
+                    </div>
+                    <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
+                      <div
+                        className="bg-brand-500 h-full rounded-full"
+                        style={{
+                          width: `${metrics.deviceBreakdown.mobile + metrics.deviceBreakdown.desktop > 0 ? Math.round((metrics.deviceBreakdown.mobile / (metrics.deviceBreakdown.mobile + metrics.deviceBreakdown.desktop || 1)) * 100) : 100}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-xs pt-1">
+                      <span className="text-zinc-300">💻 Computadores (Desktop)</span>
+                      <span className="font-mono font-bold text-white">
+                        {metrics.deviceBreakdown.desktop} visitas ({metrics.deviceBreakdown.mobile + metrics.deviceBreakdown.desktop > 0 ? Math.round((metrics.deviceBreakdown.desktop / (metrics.deviceBreakdown.mobile + metrics.deviceBreakdown.desktop || 1)) * 100) : 0}%)
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1719,21 +1832,50 @@ export const AdminPage: React.FC = () => {
 
         {/* TAB 7: PAGAMENTOS */}
         {activeTab === 'payments' && (
-          <div className="space-y-4 animate-fade-in">
+          <div className="space-y-6 animate-fade-in max-w-5xl">
+            {/* Payment Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-4 rounded-2xl glass-card border border-white/[0.06]">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 block mb-1">
+                  Total de PIX Gerados
+                </span>
+                <span className="text-2xl font-black text-white">{payments.length}</span>
+              </div>
+
+              <div className="p-4 rounded-2xl glass-card border border-emerald-500/20 bg-emerald-950/20">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-400 block mb-1">
+                  PIX Pagos / Aprovados
+                </span>
+                <span className="text-2xl font-black text-emerald-400">
+                  {payments.filter((p) => p.status === 'paid' || p.status === 'completed').length}
+                </span>
+              </div>
+
+              <div className="p-4 rounded-2xl glass-card border border-amber-500/20 bg-amber-950/20">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400 block mb-1">
+                  PIX Aguardando Pagamento
+                </span>
+                <span className="text-2xl font-black text-amber-400">
+                  {payments.filter((p) => p.status === 'pending').length}
+                </span>
+              </div>
+            </div>
+
             <div className="overflow-x-auto rounded-2xl border border-white/[0.08] bg-[#101010]">
               <table className="w-full text-left text-xs text-zinc-300">
                 <thead className="bg-zinc-950/80 uppercase font-mono text-[10px] text-zinc-400 border-b border-white/[0.08]">
                   <tr>
                     <th className="p-4">ID Transação</th>
+                    <th className="p-4">Produto</th>
                     <th className="p-4">Valor</th>
                     <th className="p-4">Status</th>
-                    <th className="p-4">Data Criação</th>
+                    <th className="p-4">Data e Hora</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.04]">
                   {payments.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="p-8 text-center text-zinc-400">
+                      <td colSpan={5} className="p-8 text-center text-zinc-400">
                         Nenhum pagamento registrado ainda.
                       </td>
                     </tr>
@@ -1741,13 +1883,26 @@ export const AdminPage: React.FC = () => {
                     payments.map((p) => (
                       <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
                         <td className="p-4 font-mono text-zinc-200">{p.id}</td>
+                        <td className="p-4 text-xs font-semibold text-zinc-300">
+                          {p.product === 'whatsapp_access' ? 'WhatsApp VIP' : 'Transmissão VIP 30d'}
+                        </td>
                         <td className="p-4 font-bold text-white">
-                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: p.currency }).format(p.amount)}
+                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: p.currency || 'BRL' }).format(p.amount)}
                         </td>
                         <td className="p-4">
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                            {p.status}
-                          </span>
+                          {p.status === 'paid' || p.status === 'completed' ? (
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                              ✓ Pago
+                            </span>
+                          ) : p.status === 'pending' ? (
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                              ⏳ Pendente
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-zinc-500/20 text-zinc-400 border border-zinc-500/30">
+                              Expirado
+                            </span>
+                          )}
                         </td>
                         <td className="p-4 text-zinc-400 font-mono">
                           {new Date(p.createdAt).toLocaleString('pt-BR')}

@@ -161,7 +161,8 @@ export interface AnalyticsEvent {
     | 'live_enter'
     | 'whatsapp_open'
     | 'whatsapp_redirect'
-    | 'previews_group_click';
+    | 'previews_group_click'
+    | 'teaser_ended';
   product?: ProductType;
   sessionId: string;
   ipHash: string;
@@ -174,6 +175,8 @@ export interface AnalyticsEvent {
 
 export interface FunnelMetrics {
   pageViews: number;
+  uniqueVisitorsTotal: number;
+  uniqueVisitorsToday: number;
   ctaClicks: number;
   checkoutsStarted: number;
   paymentsCompleted: number;
@@ -190,6 +193,7 @@ export interface FunnelMetrics {
   // Métricas Separadas por Página
   homePage: {
     views: number;
+    uniqueViews: number;
     ctaClicks: number;
     checkoutsStarted: number;
     paymentsCompleted: number;
@@ -197,6 +201,7 @@ export interface FunnelMetrics {
   };
   whatsappPage: {
     views: number;
+    uniqueViews: number;
     whatsappClicks: number;
     previewsClicks: number;
     conversionRate: number;
@@ -212,6 +217,10 @@ export interface AdminStats {
   todayRevenue: number;
   totalPayments: number;
   paidPayments: number;
+  todayPayments: number;
+  todayPaidPayments: number;
+  uniqueVisitorsTotal: number;
+  uniqueVisitorsToday: number;
   activeSessions: number;
   whatsappRedirects: number;
   liveStatus: StreamStatus;

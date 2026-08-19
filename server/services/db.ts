@@ -366,7 +366,9 @@ export const db = {
   getFunnelMetrics(): FunnelMetrics {
     const events = memoryStore.analyticsEvents;
     const now = Date.now();
-    const oneDayAgo = now - 24 * 60 * 60 * 1000;
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfTodayMs = startOfToday.getTime();
     const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
     const fiveMinAgo = now - 5 * 60 * 1000;
 
@@ -378,7 +380,12 @@ export const db = {
     const whatsappRedirects = events.filter((e) => e.eventType === 'whatsapp_redirect' || e.eventType === 'whatsapp_open').length;
     const previewsGroupClicks = events.filter((e) => e.eventType === 'previews_group_click').length;
 
-    const viewsToday = events.filter((e) => e.eventType === 'page_view' && new Date(e.createdAt).getTime() >= oneDayAgo).length;
+    const uniqueVisitorsTotal = new Set(events.filter((e) => e.eventType === 'page_view').map((e) => e.sessionId || e.ipHash)).size || pageViews;
+    const uniqueVisitorsToday = new Set(
+      events.filter((e) => e.eventType === 'page_view' && new Date(e.createdAt).getTime() >= startOfTodayMs).map((e) => e.sessionId || e.ipHash)
+    ).size || events.filter((e) => e.eventType === 'page_view' && new Date(e.createdAt).getTime() >= startOfTodayMs).length;
+
+    const viewsToday = events.filter((e) => e.eventType === 'page_view' && new Date(e.createdAt).getTime() >= startOfTodayMs).length;
     const viewsLast7Days = events.filter((e) => e.eventType === 'page_view' && new Date(e.createdAt).getTime() >= sevenDaysAgo).length;
 
     const recentEvents = events.filter((e) => new Date(e.createdAt).getTime() >= fiveMinAgo);
@@ -392,6 +399,8 @@ export const db = {
       if (ref.includes('instagram')) ref = 'instagram.com';
       else if (ref.includes('tiktok')) ref = 'tiktok.com';
       else if (ref.includes('google')) ref = 'google.com';
+      else if (ref.includes('facebook') || ref.includes('fb.')) ref = 'facebook.com';
+      else if (ref.includes('wa.me') || ref.includes('whatsapp')) ref = 'whatsapp';
       else if (!ref || ref === 'direct') ref = 'direto';
       refererMap[ref] = (refererMap[ref] || 0) + 1;
     });
@@ -399,7 +408,7 @@ export const db = {
     const topReferers = Object.entries(refererMap)
       .map(([referer, count]) => ({ referer, count }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
+      .slice(0, 6);
 
     const devices = { mobile: 0, desktop: 0, tablet: 0 };
     events.forEach((e) => {
@@ -408,21 +417,27 @@ export const db = {
       else devices.desktop++;
     });
 
-    const homeViews = events.filter((e) => e.eventType === 'page_view' && (!e.product || e.product === 'live_access')).length;
-    const homeCtaClicks = events.filter((e) => e.eventType === 'cta_click' && (!e.product || e.product === 'live_access')).length;
-    const homeCheckouts = events.filter((e) => e.eventType === 'checkout_start' && (!e.product || e.product === 'live_access')).length;
-    const homePayments = events.filter((e) => e.eventType === 'payment_success' && (!e.product || e.product === 'live_access')).length;
+    const homeEvents = events.filter((e) => !e.product || e.product === 'live_access');
+    const homeViews = homeEvents.filter((e) => e.eventType === 'page_view').length;
+    const homeUniqueViews = new Set(homeEvents.filter((e) => e.eventType === 'page_view').map((e) => e.sessionId || e.ipHash)).size || homeViews;
+    const homeCtaClicks = homeEvents.filter((e) => e.eventType === 'cta_click').length;
+    const homeCheckouts = memoryStore.payments.filter((p) => p.product === 'live_access').length || homeEvents.filter((e) => e.eventType === 'checkout_start').length;
+    const homePayments = memoryStore.payments.filter((p) => (p.status === 'paid' || p.status === 'completed') && p.product === 'live_access').length;
     const homeConvRate = homeViews > 0 ? Number(((homePayments / homeViews) * 100).toFixed(2)) : 0;
 
-    const waViews = events.filter((e) => e.eventType === 'page_view' && e.product === 'whatsapp_access').length;
-    const waClicks = events.filter((e) => (e.eventType === 'whatsapp_redirect' || e.eventType === 'whatsapp_open')).length;
-    const waPrevClicks = events.filter((e) => e.eventType === 'previews_group_click').length;
+    const waEvents = events.filter((e) => e.product === 'whatsapp_access');
+    const waViews = waEvents.filter((e) => e.eventType === 'page_view').length;
+    const waUniqueViews = new Set(waEvents.filter((e) => e.eventType === 'page_view').map((e) => e.sessionId || e.ipHash)).size || waViews;
+    const waClicks = waEvents.filter((e) => e.eventType === 'whatsapp_redirect' || e.eventType === 'whatsapp_open').length;
+    const waPrevClicks = waEvents.filter((e) => e.eventType === 'previews_group_click').length;
     const waConvRate = waViews > 0 ? Number(((waClicks / waViews) * 100).toFixed(2)) : 0;
 
     const liveViews = events.filter((e) => e.eventType === 'live_enter').length;
 
     return {
       pageViews,
+      uniqueVisitorsTotal,
+      uniqueVisitorsToday,
       ctaClicks,
       checkoutsStarted,
       paymentsCompleted,
@@ -437,6 +452,7 @@ export const db = {
       deviceBreakdown: devices,
       homePage: {
         views: homeViews,
+        uniqueViews: homeUniqueViews,
         ctaClicks: homeCtaClicks,
         checkoutsStarted: homeCheckouts,
         paymentsCompleted: homePayments,
@@ -444,6 +460,7 @@ export const db = {
       },
       whatsappPage: {
         views: waViews,
+        uniqueViews: waUniqueViews,
         whatsappClicks: waClicks,
         previewsClicks: waPrevClicks,
         conversionRate: waConvRate,
@@ -462,9 +479,21 @@ export const db = {
 
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
+    const startOfTodayMs = startOfToday.getTime();
 
-    const todayPaid = paidPayments.filter((p) => new Date(p.createdAt) >= startOfToday);
+    const todayPaid = paidPayments.filter((p) => new Date(p.createdAt).getTime() >= startOfTodayMs);
     const todayRevenue = todayPaid.reduce((acc, p) => acc + (p.amount || 0), 0);
+    const todayPayments = memoryStore.payments.filter((p) => new Date(p.createdAt).getTime() >= startOfTodayMs).length;
+
+    const uniqueVisitorsTotal = new Set(
+      memoryStore.analyticsEvents.filter((e) => e.eventType === 'page_view').map((e) => e.sessionId || e.ipHash)
+    ).size || memoryStore.analyticsEvents.filter((e) => e.eventType === 'page_view').length;
+
+    const uniqueVisitorsToday = new Set(
+      memoryStore.analyticsEvents
+        .filter((e) => e.eventType === 'page_view' && new Date(e.createdAt).getTime() >= startOfTodayMs)
+        .map((e) => e.sessionId || e.ipHash)
+    ).size || memoryStore.analyticsEvents.filter((e) => e.eventType === 'page_view' && new Date(e.createdAt).getTime() >= startOfTodayMs).length;
 
     const activeSessions = memoryStore.accessSessions.filter((s) => !s.revoked && new Date(s.expiresAt) > new Date()).length;
     const whatsappRedirects = memoryStore.analyticsEvents.filter((e) => e.eventType === 'whatsapp_redirect' || e.eventType === 'whatsapp_open').length;
@@ -474,6 +503,10 @@ export const db = {
       todayRevenue,
       totalPayments,
       paidPayments: paidPayments.length,
+      todayPayments,
+      todayPaidPayments: todayPaid.length,
+      uniqueVisitorsTotal,
+      uniqueVisitorsToday,
       activeSessions,
       whatsappRedirects,
       liveStatus: memoryStore.liveConfig.status,
