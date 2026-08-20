@@ -361,11 +361,21 @@ export const AdminPage: React.FC = () => {
 
     const updated = [...announcements, newAnn];
     setAnnouncements(updated);
+    localStorage.setItem('pl_admin_custom_announcements', JSON.stringify(updated));
     setNewAnnMessage('');
     setChatFeedback('Comunicado salvo no mural com sucesso!');
     setTimeout(() => setChatFeedback(''), 4000);
 
     try {
+      await fetch('/api/admin/announcements', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-token': token,
+        },
+        body: JSON.stringify(newAnn),
+      });
+
       if (config) {
         await api.updateAdminConfig(token, {
           ...config,
@@ -378,7 +388,12 @@ export const AdminPage: React.FC = () => {
   const handleDeleteAnnouncement = async (id: string) => {
     const updated = announcements.filter((a) => a.id !== id);
     setAnnouncements(updated);
+    localStorage.setItem('pl_admin_custom_announcements', JSON.stringify(updated));
     try {
+      await fetch(`/api/admin/announcements/${id}`, {
+        method: 'DELETE',
+        headers: { 'x-admin-token': token },
+      });
       if (config) {
         await api.updateAdminConfig(token, {
           ...config,
