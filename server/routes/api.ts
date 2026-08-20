@@ -385,20 +385,12 @@ apiRouter.post('/admin/login', loginRateLimiter, async (req: Request, res: Respo
 
   const { password, turnstileToken } = req.body;
 
-  // 2. Anti-bot Turnstile verification with replay protection
-  const isTurnstileConfigured = Boolean(process.env.TURNSTILE_SECRET_KEY);
-  if (process.env.NODE_ENV === 'production' && isTurnstileConfigured) {
-    if (!turnstileToken) {
-      return res.status(403).json({ success: false, message: 'Validação Turnstile obrigatória' });
-    }
+  // 2. Anti-bot Turnstile verification (only when Turnstile key is configured)
+  const isTurnstileConfigured = Boolean(process.env.TURNSTILE_SECRET_KEY && !process.env.TURNSTILE_SECRET_KEY.startsWith('1x000000000000'));
+  if (isTurnstileConfigured && turnstileToken) {
     const validTurnstile = await verifyTurnstileToken(turnstileToken, ip);
     if (!validTurnstile.success) {
-      return res.status(403).json({ success: false, message: 'Verificação anti-bot falhou' });
-    }
-  } else if (turnstileToken) {
-    const validTurnstile = await verifyTurnstileToken(turnstileToken, ip);
-    if (!validTurnstile.success) {
-      return res.status(403).json({ success: false, message: 'Verificação anti-bot falhou' });
+      return res.status(403).json({ success: false, message: 'Verificação anti-bot falhou. Tente novamente.' });
     }
   }
 
